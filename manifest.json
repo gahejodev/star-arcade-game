@@ -1,0 +1,25 @@
+{
+  "name": "StarHub Arcade — Play Online & Offline",
+  "short_name": "StarHub",
+  "description": "Play Star Catcher Deluxe, QuickStreak Habit Tracker, and Cosmic Match online or offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%230f172a'/%3E%3Cpolygon points='96,24 118,72 170,78 131,114 142,166 96,139 50,166 61,114 22,78 74,72' fill='%23fbbf24'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230f172a'/%3E%3Cpolygon points='256,64 314,192 454,208 350,304 378,442 256,370 134,442 162,304 58,208 198,192' fill='%23fbbf24'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
