@@ -1,0 +1,64 @@
+name: Build Android APK & Deploy StarHub to GitHub Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-apk-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up JDK 17 for Android APK Compilation
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Capacitor & Build Web Assets
+        run: |
+          npm install
+          npm run build
+          npx cap add android
+          npx cap sync android
+
+      - name: Compile Installable Android APK (Gradle AssembleDebug)
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk ../www/StarHub-Arcade-Android.apk
+
+      - name: Upload Compiled APK as GitHub Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StarHub-Arcade-Android-APK
+          path: www/StarHub-Arcade-Android.apk
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Site + Downloadable APK to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './www'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
