@@ -1,0 +1,6 @@
+{
+  "appId": "com.starhub.arcade",
+  "appName": "StarHub Arcade",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
