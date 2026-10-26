@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#020617" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>StarHub Arcade — Play Online & Download Offline (APK / Web)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* Complete Offline Fallback CSS so the downloaded HTML / APK works 100% without internet */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #020617;
+      color: #f1f5f9;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    canvas {
+      touch-action: manipulation;
+      cursor: crosshair;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    button {
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .hidden { display: none !important; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px) rotate(-0.5deg); }
+      75% { transform: translateX(5px) rotate(0.5deg); }
+    }
+    .shake-anim {
+      animation: shake 0.22s ease-in-out;
+    }
+    /* Offline fallback layout helpers */
+    .offline-shell {
+      max-width: 760px;
+      margin: 0 auto;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-start p-2.5 sm:p-5">
+
+  <!-- PLATFORM TOP BAR: Online Play + Offline Download + Store Hub -->
+  <header class="offline-shell w-full max-w-2xl mb-3 bg-slate-900/95 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-xl">
+    <div class="flex flex-wrap items-center justify-between gap-2.5">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-indigo-600 flex items-center justify-center font-black text-slate-950 text-lg shadow">
+          ★
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-amber-400">StarHub Platform</span>
+            <span id="networkStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              ● Online & Offline Ready
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Play Live in Browser or Download for Offline / Android APK</p>
+        </div>
+      </div>
+
+      <!-- Quick Platform Actions -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button
+          id="downloadOfflineBtn"
+          type="button"
+          class="px-3 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 active:scale-95 text-slate-950 font-extrabold text-xs transition shadow"
+        >
+          ⬇ Download Offline App (.html)
+        </button>
+        <button
+          id="installPwaBtn"
+          type="button"
+          class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs border border-indigo-400/40 transition"
+        >
+          📲 Install on Device
+        </button>
+      </div>
+    </div>
+
+    <!-- Platform Navigation Tabs -->
+    <nav class="mt-3 pt-2.5 border-t border-slate-800/90 flex flex-wrap items-center justify-between gap-2" aria-label="Platform Views">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button
+          id="tabPlayGameBtn"
+          type="button"
+          class="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs transition"
+        >
+          🎮 Live Play: Star Catcher
+        </button>
+        <button
+          id="tabStoreHubBtn"
+          type="button"
+          class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition"
+        >
+          📦 Apps & Games Store (3)
+        </button>
+        <button
+          id="tabApkGuideBtn"
+          type="button"
+          class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition"
+        >
+          🤖 APK & GitHub Setup
+        </button>
+      </div>
+      <span id="installToastText" class="text-[11px] text-amber-300 font-semibold"></span>
+    </nav>
+  </header>
+
+  <!-- VIEW 1: MAIN PLAYABLE GAME CARD (Star Catcher Deluxe) -->
+  <div id="gameCard" class="offline-shell w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden transition-shadow duration-300">
+    
+    <!-- Top Header & Scoreboard -->
+    <div class="p-3.5 sm:p-5 bg-slate-900/95 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span id="roundDot" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="stepBadge" class="text-xs font-bold uppercase tracking-wider text-amber-400">Deluxe Overdrive Edition</span>
+        </div>
+        <div class="flex items-center gap-2.5 mt-0.5">
+          <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">Star Catcher</h1>
+          <span id="coinPill" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-extrabold">
+            🪙 <span id="coinBalanceDisplay">0</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Score, Streak, Time & High Score Pills -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <div class="bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1.5 text-center min-w-[60px]">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Time</div>
+          <div id="timeLeftDisplay" class="text-lg sm:text-xl font-extrabold text-emerald-400 leading-tight">15s</div>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1.5 text-center min-w-[64px]">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Combo</div>
+          <div id="streakDisplay" class="text-lg sm:text-xl font-extrabold text-fuchsia-400 leading-tight">1x</div>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1.5 text-center min-w-[64px]">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Score</div>
+          <div id="scoreDisplay" class="text-lg sm:text-xl font-extrabold text-amber-400 leading-tight">0</div>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1.5 text-center min-w-[64px]">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Best</div>
+          <div id="highScoreDisplay" class="text-lg sm:text-xl font-extrabold text-indigo-300 leading-tight">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode Bar, Shop Toggle & Star Legend -->
+    <div class="px-4 py-2 bg-slate-950/75 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Difficulty Mode">
+        <span class="text-slate-400 font-semibold mr-0.5">Mode:</span>
+        <button
+          id="modeChillBtn"
+          type="button"
+          class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold border border-slate-700 transition"
+        >
+          Chill (20s)
+        </button>
+        <button
+          id="modeArcadeBtn"
+          type="button"
+          class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold border border-indigo-500 transition"
+        >
+          Arcade (15s)
+        </button>
+        <button
+          id="modeHyperBtn"
+          type="button"
+          class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold border border-slate-700 transition"
+        >
+          Hyper (12s)
+        </button>
+        <button
+          id="toggleShopBtn"
+          type="button"
+          aria-expanded="false"
+          class="ml-1 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold border border-amber-400/40 transition"
+        >
+          🛒 Armory
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 text-[11px] font-medium text-slate-300">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>+1</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-400 inline-block"></span>+3</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>+2s</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>Meteor</span>
+      </div>
+    </div>
+
+    <!-- Collapsible Upgrade Armory Drawer -->
+    <div id="shopPanel" class="hidden px-4 py-3 bg-slate-950 border-b border-slate-800">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Star Armory — Spend 🪙 Coins on Permanent Upgrades</span>
+        <span class="text-[11px] text-slate-400">1 Score Pt = 1 🪙 Coin</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2">
+          <div>
+            <div class="text-xs font-bold text-white">🧲 Magnet Field <span id="magnetLvText" class="text-cyan-400">Lv 0/3</span></div>
+            <div class="text-[11px] text-slate-400">+15% wider catch radius per level</div>
+          </div>
+          <button
+            id="buyMagnetBtn"
+            type="button"
+            class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-bold text-xs transition shrink-0"
+          >
+            Buy (15 🪙)
+          </button>
+        </div>
+
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2">
+          <div>
+            <div class="text-xs font-bold text-white">🔋 Time Battery <span id="timeLvText" class="text-emerald-400">Lv 0/3</span></div>
+            <div class="text-[11px] text-slate-400">+2s extra starting round time</div>
+          </div>
+          <button
+            id="buyTimeBtn"
+            type="button"
+            class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs transition shrink-0"
+          >
+            Buy (20 🪙)
+          </button>
+        </div>
+
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2">
+          <div>
+            <div class="text-xs font-bold text-white">🍀 Lucky Star <span id="luckLvText" class="text-fuchsia-400">Lv 0/3</span></div>
+            <div class="text-[11px] text-slate-400">More Blue (+3) & Chrono (+2s) stars</div>
+          </div>
+          <button
+            id="buyLuckBtn"
+            type="button"
+            class="px-2.5 py-1 rounded-lg bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-300 border border-fuchsia-500/40 font-bold text-xs transition shrink-0"
+          >
+            Buy (25 🪙)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions, Shield Status & Difficulty Banner -->
+    <div id="statusBanner" class="px-4 py-2 bg-indigo-950/60 border-b border-indigo-900/50 text-xs sm:text-sm text-indigo-200 flex items-center justify-between gap-2">
+      <span id="feedbackText" class="truncate">Catch drifting stars! Chain 9 hits for 4x FEVER OVERDRIVE!</span>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span id="shieldBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-700/60">🛡️ Shield: Ready</span>
+        <span id="difficultyBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-cyan-300 border border-slate-700">Size: 100%</span>
+      </div>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvasContainer" class="relative w-full h-80 sm:h-96 bg-gradient-to-b from-slate-950 via-indigo-950/30 to-slate-950">
+      <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+      <!-- Pause Overlay Modal -->
+      <div
+        id="pauseOverlay"
+        class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center"
+      >
+        <div class="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">Game Paused</div>
+        <h2 class="text-2xl font-extrabold text-white mb-4">Take a Breather</h2>
+        <button
+          id="resumeBtn"
+          type="button"
+          class="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-extrabold text-sm shadow-lg transition"
+        >
+          ▶ Resume Round
+        </button>
+      </div>
+
+      <!-- Round Over Overlay Modal (Hidden during active play) -->
+      <div
+        id="roundOverOverlay"
+        class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center"
+      >
+        <div class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-1">Time's Up!</div>
+        <h2 id="roundSummaryTitle" class="text-2xl sm:text-3xl font-extrabold text-white mb-1">Round Score: 0</h2>
+        <p id="roundSummarySub" class="text-sm text-amber-300 font-semibold mb-4">Personal Best: 0 ★</p>
+
+        <!-- Post-Round Stats Grid -->
+        <div class="grid grid-cols-3 gap-2 w-full max-w-xs mb-5">
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5">
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Caught</div>
+            <div id="statCaught" class="text-base font-extrabold text-white">0</div>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5">
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Max Combo</div>
+            <div id="statMaxStreak" class="text-base font-extrabold text-fuchsia-400">0</div>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5">
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Accuracy</div>
+            <div id="statAccuracy" class="text-base font-extrabold text-emerald-400">100%</div>
+          </div>
+        </div>
+
+        <button
+          id="playAgainBtn"
+          type="button"
+          class="px-5 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 active:scale-95 text-slate-950 font-extrabold text-sm shadow-lg transition"
+        >
+          ▶ Play Another 15s Round
+        </button>
+      </div>
+    </div>
+
+    <!-- Achievement Badges Bar -->
+    <div class="px-4 py-2 bg-slate-950/90 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+      <span class="text-slate-400 font-semibold">Medals:</span>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span id="badgeFirst" class="px-2 py-0.5 rounded-full bg-slate-900 text-slate-500 border border-slate-800 font-semibold transition">⭐ First Catch</span>
+        <span id="badgeCombo6" class="px-2 py-0.5 rounded-full bg-slate-900 text-slate-500 border border-slate-800 font-semibold transition">🔥 6x Streak</span>
+        <span id="badgeFever9" class="px-2 py-0.5 rounded-full bg-slate-900 text-slate-500 border border-slate-800 font-semibold transition">⚡ 9x Fever</span>
+        <span id="badgeScore40" class="px-2 py-0.5 rounded-full bg-slate-900 text-slate-500 border border-slate-800 font-semibold transition">👑 40+ Pts</span>
+      </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="p-3.5 sm:p-4 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          id="quickCatchBtn"
+          type="button"
+          class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-bold text-xs sm:text-sm transition"
+        >
+          ★ Catch Star
+        </button>
+        <button
+          id="moveStarBtn"
+          type="button"
+          class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition"
+        >
+          Skip Spot
+        </button>
+        <button
+          id="pauseBtn"
+          type="button"
+          class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition"
+        >
+          ⏸ Pause
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          id="muteBtn"
+          type="button"
+          aria-pressed="false"
+          class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition"
+        >
+          🔊 Sound: On
+        </button>
+        <button
+          id="resetBtn"
+          type="button"
+          class="px-3 py-2 rounded-xl bg-rose-950/70 hover:bg-rose-900/80 active:scale-95 text-rose-200 font-semibold text-xs sm:text-sm border border-rose-800/60 transition"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: APPS & GAMES STOREFRONT HUB (Play Online + Download Offline) -->
+  <section id="storeHubSection" class="hidden offline-shell w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 sm:p-5">
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-800">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Online & Offline App Center</span>
+        <h2 class="text-xl font-black text-white">Apps & Games Download Portal</h2>
+      </div>
+      <span class="text-xs text-slate-400">Every app works 100% offline once downloaded</span>
+    </div>
+
+    <!-- App Cards List -->
+    <div class="grid grid-cols-1 gap-3">
+      <!-- App 1: Star Catcher Deluxe -->
+      <div class="p-4 rounded-2xl bg-slate-950/90 border border-amber-500/40 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-start gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-2xl shrink-0">
+            ⭐
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-extrabold text-white">Star Catcher — Deluxe Overdrive</h3>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300">v4.0 Arcade</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Fast-paced space reflex arcade game with Armory upgrades, 4x Fever Overdrive, and Meteor Shield.</p>
+            <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-400">
+              <span>📱 Android APK Ready</span>
+              <span>•</span>
+              <span>⚡ Offline HTML (28 KB)</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            id="launchStarCatcherBtn"
+            type="button"
+            class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs transition"
+          >
+            ▶ Play Online
+          </button>
+          <button
+            id="storeDownloadStarBtn"
+            type="button"
+            class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs transition"
+          >
+            ⬇ Download Offline (.html)
+          </button>
+        </div>
+      </div>
+
+      <!-- App 2: Daily Habit Streak Tracker (Built-in Mini App!) -->
+      <div class="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center text-2xl shrink-0">
+              ✅
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-white">QuickStreak — Daily Habit Tracker</h3>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300">Productivity App</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">Track daily habits right in your browser or download a standalone offline copy for your phone.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              id="toggleHabitMiniAppBtn"
+              type="button"
+              class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition"
+            >
+              ▶ Open Live App
+            </button>
+            <button
+              id="downloadHabitAppBtn"
+              type="button"
+              class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs transition"
+            >
+              ⬇ Download Offline (.html)
+            </button>
+          </div>
+        </div>
+
+        <!-- Embedded Live Playable Habit Tracker Mini-App -->
+        <div id="habitMiniAppBox" class="hidden pt-3 border-t border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-emerald-300">Live Habit Checklist (Saved Offline in Browser)</span>
+            <span id="habitProgressText" class="text-xs font-extrabold text-amber-300">0/3 Completed</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button id="habitBtn1" type="button" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-left text-xs font-semibold text-slate-200 hover:border-emerald-400 transition">
+              ⬜ Drink 8 Glasses of Water
+            </button>
+            <button id="habitBtn2" type="button" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-left text-xs font-semibold text-slate-200 hover:border-emerald-400 transition">
+              ⬜ 20 Mins Coding Practice
+            </button>
+            <button id="habitBtn3" type="button" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-left text-xs font-semibold text-slate-200 hover:border-emerald-400 transition">
+              ⬜ 15 Mins Walk / Exercise
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- App 3: Cosmic Memory Flip Mini-Game -->
+      <div class="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-fuchsia-400/20 border border-fuchsia-400/40 flex items-center justify-center text-2xl shrink-0">
+              🧠
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-white">Cosmic Match — Memory Puzzle</h3>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-400/20 text-fuchsia-300">Brain Game</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">Flip space cards to match pairs in the fewest moves—playable online and downloadable offline.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              id="toggleMemoryMiniGameBtn"
+              type="button"
+              class="px-3.5 py-2 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs transition"
+            >
+              ▶ Play Live Puzzle
+            </button>
+            <button
+              id="downloadMemoryGameBtn"
+              type="button"
+              class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs transition"
+            >
+              ⬇ Download Offline (.html)
+            </button>
+          </div>
+        </div>
+
+        <!-- Embedded Live Playable Memory Mini-Game -->
+        <div id="memoryMiniGameBox" class="hidden pt-3 border-t border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span id="memoryStatusText" class="text-xs font-bold text-fuchsia-300">Tap two cards to find matching cosmic pairs!</span>
+            <button id="resetMemoryBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700">
+              Shuffle Cards
+            </button>
+          </div>
+          <div id="memoryGrid" class="grid grid-cols-4 gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEW 3: ANDROID APK & GITHUB PAGES DEPLOYMENT CENTER -->
+  <section id="apkGuideSection" class="hidden offline-shell w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 sm:p-5">
+    <div class="pb-3 mb-4 border-b border-slate-800">
+      <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">GitHub Pages + Android APK Builder</span>
+      <h2 class="text-xl font-black text-white">How Your APK & GitHub Download Portal Work</h2>
+      <p class="text-xs text-slate-400 mt-1">
+        We packaged your complete GitHub repository and automated Android APK build workflow into the downloadable ZIP kit attached in chat.
+      </p>
+    </div>
+
+    <div class="space-y-3 text-xs sm:text-sm text-slate-200">
+      <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+        <div class="font-extrabold text-amber-300 mb-1">1. Instant Offline Download (Right from This Page)</div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Click the green <strong>⬇ Download Offline App (.html)</strong> button at the top of this screen anytime. It saves a standalone file that works 100% offline on any phone, tablet, or computer browser without internet.
+        </p>
+      </div>
+
+      <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+        <div class="font-extrabold text-emerald-300 mb-1">2. Automatic GitHub APK Compiler (Included in Your ZIP Kit)</div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Upload the files from <strong>star-arcade-github-apk-kit.zip</strong> to a new repository on your GitHub account. The included <code>.github/workflows/build-apk-and-pages.yml</code> workflow automatically:
+        </p>
+        <ul class="list-disc list-inside text-xs text-slate-300 mt-2 space-y-1">
+          <li>Deploys this entire Apps & Games Hub live on your <strong>GitHub Pages</strong> URL.</li>
+          <li>Compiles a native <strong>StarCatcher-Android.apk</strong> using Capacitor & Android SDK in GitHub's cloud.</li>
+          <li>Attaches the compiled <code>.apk</code> directly to your GitHub Releases & live download page so anyone can install it on Android!</li>
+        </ul>
+      </div>
+
+      <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div class="font-extrabold text-indigo-300">3. Install directly on Phone right now (PWA Mode)</div>
+          <p class="text-xs text-slate-400">In Chrome or Edge on Android, tap "Add to Home Screen" or "Install App" to install it like a native app.</p>
+        </div>
+        <button
+          id="guideBackToGameBtn"
+          type="button"
+          class="px-3.5 py-2 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs transition shrink-0"
+        >
+          🎮 Back to Live Game
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // --- 0. PWA MANIFEST & OFFLINE DOWNLOAD GENERATOR ---
+    let deferredInstallPrompt = null;
+    const installToastText = document.getElementById('installToastText');
+
+    // Attach dynamic Web App Manifest so mobile browsers recognize this as an installable app
+    (function setupDynamicManifest() {
+      try {
+        const manifestObj = {
+          name: 'StarHub Arcade — Star Catcher Deluxe',
+          short_name: 'StarHub',
+          start_url: '.',
+          display: 'standalone',
+          background_color: '#020617',
+          theme_color: '#020617',
+          description: 'Play Star Catcher Deluxe and offline mini-apps anywhere.'
+        };
+        const blob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+      } catch (e) {
+        // Ignore in restricted frames
+      }
+    })();
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      installToastText.textContent = '📲 Ready to install on your device!';
+    });
+
+    function triggerHtmlDownload(filename, htmlString, toastMsg) {
+      try {
+        const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 1500);
+        installToastText.textContent = toastMsg;
+      } catch (err) {
+        installToastText.textContent = 'Download prepared! Save page (Ctrl+S) for offline use.';
+      }
+    }
+
+    function downloadFullOfflinePlatform() {
+      const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      triggerHtmlDownload(
+        'StarHub-Arcade-Offline.html',
+        fullHtml,
+        '✅ Downloaded StarHub-Arcade-Offline.html! Open it anytime without internet.'
+      );
+    }
+
+    function buildStandaloneHabitAppHtml() {
+      return [
+        '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
+        '<title>QuickStreak — Offline Habit Tracker</title>',
+        '<style>body{margin:0;font-family:sans-serif;background:#020617;color:#f8fafc;display:flex;justify-content:center;padding:24px}',
+        '.card{max-width:460px;width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:16px;padding:20px}',
+        'button{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid #334155;background:#1e293b;color:#fff;font-weight:700;cursor:pointer;text-align:left}</style></head>',
+        '<body><div class="card"><h2>✅ QuickStreak Offline Habit Tracker</h2><p>Tap habits to toggle daily completion:</p>',
+        '<button onclick="this.textContent=this.textContent.startsWith(\'✅\')?\'⬜ Drink 8 Glasses of Water\':\'✅ Drink 8 Glasses of Water\'">⬜ Drink 8 Glasses of Water</button>',
+        '<button onclick="this.textContent=this.textContent.startsWith(\'✅\')?\'⬜ 20 Mins Coding Practice\':\'✅ 20 Mins Coding Practice\'">⬜ 20 Mins Coding Practice</button>',
+        '<button onclick="this.textContent=this.textContent.startsWith(\'✅\')?\'⬜ 15 Mins Walk / Exercise\':\'✅ 15 Mins Walk / Exercise\'">⬜ 15 Mins Walk / Exercise</button>',
+        '</div></body></html>'
+      ].join('');
+    }
+
+    // --- 1. GAME MODES, UPGRADES & STATE VARIABLES ---
+    const MODES = {
+      chill: { label: 'Chill', duration: 20, speedMult: 0.65, minRadius: 18, hazardEnabled: false },
+      arcade: { label: 'Arcade', duration: 15, speedMult: 1.0, minRadius: 15, hazardEnabled: true },
+      hyper: { label: 'Hyper', duration: 12, speedMult: 1.45, minRadius: 13, hazardEnabled: true }
+    };
+
+    const BASE_RADIUS = 28;
+    let currentModeKey = 'arcade';
+    let score = 0;
+    let highScore = 0;
+    let coins = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let starsCaught = 0;
+    let totalClicks = 0;
+    let shieldReady = true;
+    let isPaused = false;
+
+    const upgrades = {
+      magnet: 0,
+      time: 0,
+      luck: 0
+    };
+
+    const medals = {
+      first: false,
+      combo6: false,
+      fever9: false,
+      score40: false
+    };
+
+    let timeLeft = MODES[currentModeKey].duration;
+    let timerIntervalId = null;
+    let isRoundActive = false;
+    let isRoundOver = false;
+    let isMuted = false;
+    let audioCtx = null;
+    let animFrameId = null;
+    let pulseAngle = 0;
+
+    try {
+      const savedBest = localStorage.getItem('starCatcherHighScore');
+      if (savedBest !== null) highScore = parseInt(savedBest, 10) || 0;
+      const savedCoins = localStorage.getItem('starCatcherCoins');
+      if (savedCoins !== null) coins = parseInt(savedCoins, 10) || 0;
+      const savedUpgrades = localStorage.getItem('starCatcherUpgrades');
+      if (savedUpgrades) {
+        const parsed = JSON.parse(savedUpgrades);
+        upgrades.magnet = Math.min(3, parseInt(parsed.magnet, 10) || 0);
+        upgrades.time = Math.min(3, parseInt(parsed.time, 10) || 0);
+        upgrades.luck = Math.min(3, parseInt(parsed.luck, 10) || 0);
+      }
+    } catch (err) {
+      // Ignore storage errors in restricted iframes
+    }
+
+    const star = {
+      x: 180,
+      y: 160,
+      vx: 1.3,
+      vy: 0.95,
+      radius: BASE_RADIUS,
+      hitScale: 1,
+      kind: 'gold'
+    };
+
+    const starTrail = [];
+
+    const hazard = {
+      active: false,
+      x: 90,
+      y: 90,
+      vx: -1.5,
+      vy: 1.25,
+      radius: 20,
+      angle: 0
+    };
+
+    const bgStars = [];
+    const popups = [];
+    const particles = [];
+
+    // --- 2. DOM ELEMENTS ---
+    const gameCard = document.getElementById('gameCard');
+    const storeHubSection = document.getElementById('storeHubSection');
+    const apkGuideSection = document.getElementById('apkGuideSection');
+    const tabPlayGameBtn = document.getElementById('tabPlayGameBtn');
+    const tabStoreHubBtn = document.getElementById('tabStoreHubBtn');
+    const tabApkGuideBtn = document.getElementById('tabApkGuideBtn');
+    const downloadOfflineBtn = document.getElementById('downloadOfflineBtn');
+    const installPwaBtn = document.getElementById('installPwaBtn');
+    const launchStarCatcherBtn = document.getElementById('launchStarCatcherBtn');
+    const storeDownloadStarBtn = document.getElementById('storeDownloadStarBtn');
+    const toggleHabitMiniAppBtn = document.getElementById('toggleHabitMiniAppBtn');
+    const downloadHabitAppBtn = document.getElementById('downloadHabitAppBtn');
+    const habitMiniAppBox = document.getElementById('habitMiniAppBox');
+    const habitProgressText = document.getElementById('habitProgressText');
+    const habitBtn1 = document.getElementById('habitBtn1');
+    const habitBtn2 = document.getElementById('habitBtn2');
+    const habitBtn3 = document.getElementById('habitBtn3');
+    const toggleMemoryMiniGameBtn = document.getElementById('toggleMemoryMiniGameBtn');
+    const downloadMemoryGameBtn = document.getElementById('downloadMemoryGameBtn');
+    const memoryMiniGameBox = document.getElementById('memoryMiniGameBox');
+    const memoryStatusText = document.getElementById('memoryStatusText');
+    const resetMemoryBtn = document.getElementById('resetMemoryBtn');
+    const memoryGrid = document.getElementById('memoryGrid');
+    const guideBackToGameBtn = document.getElementById('guideBackToGameBtn');
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvasContainer');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const streakDisplay = document.getElementById('streakDisplay');
+    const timeLeftDisplay = document.getElementById('timeLeftDisplay');
+    const highScoreDisplay = document.getElementById('highScoreDisplay');
+    const coinBalanceDisplay = document.getElementById('coinBalanceDisplay');
+    const feedbackText = document.getElementById('feedbackText');
+    const shieldBadge = document.getElementById('shieldBadge');
+    const difficultyBadge = document.getElementById('difficultyBadge');
+    const pauseOverlay = document.getElementById('pauseOverlay');
+    const resumeBtn = document.getElementById('resumeBtn');
+    const roundOverOverlay = document.getElementById('roundOverOverlay');
+    const roundSummaryTitle = document.getElementById('roundSummaryTitle');
+    const roundSummarySub = document.getElementById('roundSummarySub');
+    const statCaught = document.getElementById('statCaught');
+    const statMaxStreak = document.getElementById('statMaxStreak');
+    const statAccuracy = document.getElementById('statAccuracy');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const quickCatchBtn = document.getElementById('quickCatchBtn');
+    const moveStarBtn = document.getElementById('moveStarBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const muteBtn = document.getElementById('muteBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const modeChillBtn = document.getElementById('modeChillBtn');
+    const modeArcadeBtn = document.getElementById('modeArcadeBtn');
+    const modeHyperBtn = document.getElementById('modeHyperBtn');
+    const toggleShopBtn = document.getElementById('toggleShopBtn');
+    const shopPanel = document.getElementById('shopPanel');
+    const magnetLvText = document.getElementById('magnetLvText');
+    const timeLvText = document.getElementById('timeLvText');
+    const luckLvText = document.getElementById('luckLvText');
+    const buyMagnetBtn = document.getElementById('buyMagnetBtn');
+    const buyTimeBtn = document.getElementById('buyTimeBtn');
+    const buyLuckBtn = document.getElementById('buyLuckBtn');
+    const badgeFirst = document.getElementById('badgeFirst');
+    const badgeCombo6 = document.getElementById('badgeCombo6');
+    const badgeFever9 = document.getElementById('badgeFever9');
+    const badgeScore40 = document.getElementById('badgeScore40');
+
+    highScoreDisplay.textContent = String(highScore);
+    coinBalanceDisplay.textContent = String(coins);
+
+    // --- 3. WEB AUDIO SYNTHESIZER ---
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSound(type) {
+      if (isMuted) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'catch') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.14);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      } else if (type === 'bonus') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(659.25, now);
+        osc.frequency.setValueAtTime(880.0, now + 0.07);
+        osc.frequency.exponentialRampToValueAtTime(1174.66, now + 0.22);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        osc.start(now);
+        osc.stop(now + 0.24);
+      } else if (type === 'chrono') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.22);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        osc.start(now);
+        osc.stop(now + 0.24);
+      } else if (type === 'shield') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440.0, now);
+        osc.frequency.exponentialRampToValueAtTime(880.0, now + 0.18);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'upgrade') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.06);
+        osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      } else if (type === 'hazard') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(75, now + 0.22);
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        osc.start(now);
+        osc.stop(now + 0.24);
+      } else if (type === 'miss') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.12);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } else if (type === 'gameover') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.setValueAtTime(440.0, now + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(329.63, now + 0.32);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+        osc.start(now);
+        osc.stop(now + 0.34);
+      } else if (type === 'reset') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(392.0, now);
+        osc.frequency.exponentialRampToValueAtTime(261.63, now + 0.16);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        osc.start(now);
+        osc.stop(now + 0.16);
+      }
+    }
+
+    // --- 4. PERSISTENCE, UPGRADES & ACHIEVEMENTS ---
+    function saveProgress() {
+      try {
+        localStorage.setItem('starCatcherHighScore', String(highScore));
+        localStorage.setItem('starCatcherCoins', String(coins));
+        localStorage.setItem('starCatcherUpgrades', JSON.stringify(upgrades));
+      } catch (err) {
+        // Ignore storage errors in restricted iframes
+      }
+    }
+
+    function updateShopUI() {
+      coinBalanceDisplay.textContent = String(coins);
+      magnetLvText.textContent = 'Lv ' + upgrades.magnet + '/3';
+      timeLvText.textContent = 'Lv ' + upgrades.time + '/3';
+      luckLvText.textContent = 'Lv ' + upgrades.luck + '/3';
+
+      const magnetCost = (upgrades.magnet + 1) * 15;
+      const timeCost = (upgrades.time + 1) * 20;
+      const luckCost = (upgrades.luck + 1) * 25;
+
+      buyMagnetBtn.textContent = upgrades.magnet >= 3 ? 'MAXED' : 'Buy (' + magnetCost + ' 🪙)';
+      buyMagnetBtn.disabled = upgrades.magnet >= 3 || coins < magnetCost;
+      buyMagnetBtn.classList.toggle('opacity-40', buyMagnetBtn.disabled);
+
+      buyTimeBtn.textContent = upgrades.time >= 3 ? 'MAXED' : 'Buy (' + timeCost + ' 🪙)';
+      buyTimeBtn.disabled = upgrades.time >= 3 || coins < timeCost;
+      buyTimeBtn.classList.toggle('opacity-40', buyTimeBtn.disabled);
+
+      buyLuckBtn.textContent = upgrades.luck >= 3 ? 'MAXED' : 'Buy (' + luckCost + ' 🪙)';
+      buyLuckBtn.disabled = upgrades.luck >= 3 || coins < luckCost;
+      buyLuckBtn.classList.toggle('opacity-40', buyLuckBtn.disabled);
+    }
+
+    function updateShieldUI() {
+      if (shieldReady) {
+        shieldBadge.textContent = '🛡️ Shield: Ready';
+        shieldBadge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-700/60';
+      } else {
+        const needed = 5 - (starsCaught % 5);
+        shieldBadge.textContent = '🛡️ Charge: ' + needed + '★';
+        shieldBadge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700';
+      }
+    }
+
+    function checkMedals() {
+      if (starsCaught >= 1 && !medals.first) {
+        medals.first = true;
+        badgeFirst.className = 'px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/50 font-bold transition';
+      }
+      if (streak >= 6 && !medals.combo6) {
+        medals.combo6 = true;
+        badgeCombo6.className = 'px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 font-bold transition';
+      }
+      if (streak >= 9 && !medals.fever9) {
+        medals.fever9 = true;
+        badgeFever9.className = 'px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-400/50 font-bold transition';
+      }
+      if (score >= 40 && !medals.score40) {
+        medals.score40 = true;
+        badgeScore40.className = 'px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 font-bold transition';
+      }
+    }
+
+    // --- 5. COMBO MULTIPLIER, FEVER OVERDRIVE & PARTICLE FX ---
+    function getComboMultiplier() {
+      if (streak >= 9) return 4;
+      if (streak >= 6) return 3;
+      if (streak >= 3) return 2;
+      return 1;
+    }
+
+    function updateStreakUI() {
+      const mult = getComboMultiplier();
+      streakDisplay.textContent = mult === 4 ? '4x🔥' : mult + 'x';
+      if (mult === 4) {
+        streakDisplay.className = 'text-lg sm:text-xl font-black text-amber-300 leading-tight animate-bounce';
+        gameCard.classList.add('ring-2', 'ring-amber-400/60');
+      } else if (mult === 3) {
+        streakDisplay.className = 'text-lg sm:text-xl font-extrabold text-amber-300 leading-tight';
+        gameCard.classList.remove('ring-2', 'ring-amber-400/60');
+      } else if (mult === 2) {
+        streakDisplay.className = 'text-lg sm:text-xl font-extrabold text-cyan-300 leading-tight';
+        gameCard.classList.remove('ring-2', 'ring-amber-400/60');
+      } else {
+        streakDisplay.className = 'text-lg sm:text-xl font-extrabold text-fuchsia-400 leading-tight';
+        gameCard.classList.remove('ring-2', 'ring-amber-400/60');
+      }
+    }
+
+    function getMagnetBonusMultiplier() {
+      return 1.45 + upgrades.magnet * 0.15;
+    }
+
+    function updateStarDifficulty() {
+      const mode = MODES[currentModeKey];
+      const newRadius = Math.max(mode.minRadius, BASE_RADIUS - score * 0.35);
+      star.radius = newRadius;
+      const pct = Math.round((newRadius / BASE_RADIUS) * 100);
+      difficultyBadge.textContent = 'Size: ' + pct + '%';
+
+      hazard.active = mode.hazardEnabled && score >= 4;    }
+
+    function spawnBurstParticles(x, y, rgbString, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+        const speed = 1.6 + Math.random() * 3.2;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          r: 2 + Math.random() * 2.4,
+          alpha: 1,
+          color: rgbString
+        });
+      }
+    }
+
+    function triggerScreenShake() {
+      gameCard.classList.remove('shake-anim');
+      void gameCard.offsetWidth;
+      gameCard.classList.add('shake-anim');
+    }
+
+    // --- 6. COUNTDOWN TIMER & ROUND LIFECYCLE ---
+    function getRoundStartingTime() {
+      return MODES[currentModeKey].duration + upgrades.time * 2;
+    }
+
+    function updateTimerStyle() {
+      timeLeftDisplay.textContent = timeLeft + 's';
+      if (timeLeft <= 5 && isRoundActive) {
+        timeLeftDisplay.className = 'text-lg sm:text-xl font-extrabold text-rose-400 leading-tight animate-pulse';
+      } else {
+        timeLeftDisplay.className = 'text-lg sm:text-xl font-extrabold text-emerald-400 leading-tight';
+      }
+    }
+
+    function stopTimer() {
+      if (timerIntervalId !== null) {
+        window.clearInterval(timerIntervalId);
+        timerIntervalId = null;
+      }
+    }
+
+    function endRound() {
+      stopTimer();
+      isRoundActive = false;
+      isRoundOver = true;
+      isPaused = false;
+      pauseOverlay.classList.add('hidden');
+      quickCatchBtn.disabled = true;
+      moveStarBtn.disabled = true;
+      pauseBtn.disabled = true;
+      quickCatchBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      moveStarBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      pauseBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+      let beatRecord = false;
+      if (score > highScore) {
+        highScore = score;
+        highScoreDisplay.textContent = String(highScore);
+        beatRecord = true;
+      }
+      saveProgress();
+      updateShopUI();
+
+      const accuracy = totalClicks > 0 ? Math.round((starsCaught / totalClicks) * 100) : 100;
+      statCaught.textContent = String(starsCaught);
+      statMaxStreak.textContent = maxStreak + ' hits';
+      statAccuracy.textContent = accuracy + '%';
+
+      playSound('gameover');
+      roundSummaryTitle.textContent = 'Round Score: ' + score;
+      roundSummarySub.textContent = beatRecord
+        ? '🎉 New Personal Best! (' + highScore + ' ★)'
+        : 'Personal Best: ' + highScore + ' ★';
+      feedbackText.textContent = "Time's up! Visit the Armory to spend your 🪙 Coins or play again.";
+      roundOverOverlay.classList.remove('hidden');
+    }
+
+    function startTimerIfNeeded() {
+      if (isRoundActive || isRoundOver || isPaused) return;
+      isRoundActive = true;
+      stopTimer();
+      timerIntervalId = window.setInterval(function () {
+        if (isPaused) return;
+        timeLeft -= 1;
+        updateTimerStyle();
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          updateTimerStyle();
+          endRound();
+        }
+      }, 1000);
+    }
+
+    function togglePause() {
+      if (!isRoundActive || isRoundOver) return;
+      isPaused = !isPaused;
+      pauseOverlay.classList.toggle('hidden', !isPaused);
+      pauseBtn.textContent = isPaused ? '▶ Resume' : '⏸ Pause';
+    }
+
+    function startNewRound() {
+      stopTimer();
+      const mode = MODES[currentModeKey];
+      score = 0;
+      streak = 0;
+      maxStreak = 0;
+      starsCaught = 0;
+      totalClicks = 0;
+      shieldReady = true;
+      isPaused = false;
+      timeLeft = getRoundStartingTime();
+      isRoundActive = false;
+      isRoundOver = false;
+      popups.length = 0;
+      particles.length = 0;
+      starTrail.length = 0;
+
+      scoreDisplay.textContent = '0';
+      pauseBtn.textContent = '⏸ Pause';
+      pauseOverlay.classList.add('hidden');
+      roundOverOverlay.classList.add('hidden');
+      updateStreakUI();
+      updateShieldUI();
+      updateStarDifficulty();
+      updateTimerStyle();
+      updateShopUI();
+
+      quickCatchBtn.disabled = false;
+      moveStarBtn.disabled = false;
+      pauseBtn.disabled = false;
+      quickCatchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      moveStarBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      pauseBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+      moveStarToRandomSpot();
+      placeHazardAwayFromStar();
+      feedbackText.textContent = mode.label + ' Mode (' + timeLeft + 's) — tap the star to launch!';
+    }
+
+    // --- 7. CANVAS SIZING, STAR & HAZARD PLACEMENT ---
+    function createBgStars() {
+      bgStars.length = 0;
+      const count = 44;
+      for (let i = 0; i < count; i++) {
+        bgStars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.6 + 0.5,
+          alpha: Math.random() * 0.6 + 0.2
+        });
+      }
+    }
+
+    function placeHazardAwayFromStar() {
+      const pad = hazard.radius + 18;
+      const safeW = Math.max(canvas.width - pad * 2, 20);
+      const safeH = Math.max(canvas.height - pad * 2, 20);
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const hx = pad + Math.random() * safeW;
+        const hy = pad + Math.random() * safeH;
+        const dist = Math.hypot(hx - star.x, hy - star.y);
+        if (dist > 95 || attempt === 9) {
+          hazard.x = hx;
+          hazard.y = hy;
+          break;
+        }
+      }
+    }
+
+    function moveStarToRandomSpot() {
+      updateStarDifficulty();
+      const padding = star.radius + 20;
+      const safeW = Math.max(canvas.width - padding * 2, 20);
+      const safeH = Math.max(canvas.height - padding * 2, 20);
+      star.x = padding + Math.random() * safeW;
+      star.y = padding + Math.random() * safeH;
+      star.hitScale = 1.38;
+      starTrail.length = 0;
+
+      const mode = MODES[currentModeKey];
+      const baseSpeed = (1.1 + Math.min(score * 0.04, 1.4)) * mode.speedMult;
+      const angle = Math.random() * Math.PI * 2;
+      star.vx = Math.cos(angle) * baseSpeed;
+      star.vy = Math.sin(angle) * baseSpeed;
+
+      const luckBoost = upgrades.luck * 0.05;
+      const chronoChance = 0.12 + luckBoost * 0.5;
+      const bonusChance = chronoChance + 0.23 + luckBoost;
+      const roll = Math.random();
+      if (roll < chronoChance) {
+        star.kind = 'chrono';
+      } else if (roll < bonusChance) {
+        star.kind = 'bonus';
+      } else {
+        star.kind = 'gold';
+      }
+    }
+
+    function resizeCanvas() {
+      const rect = container.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      canvas.width = Math.max(Math.floor(rect.width), 260);
+      canvas.height = Math.max(Math.floor(rect.height), 240);
+      createBgStars();
+      const pad = star.radius + 16;
+      star.x = Math.min(Math.max(star.x, pad), canvas.width - pad);
+      star.y = Math.min(Math.max(star.y, pad), canvas.height - pad);
+      hazard.x = Math.min(Math.max(hazard.x, pad), canvas.width - pad);
+      hazard.y = Math.min(Math.max(hazard.y, pad), canvas.height - pad);
+      drawScene();
+    }
+
+    // --- 8. DRAWING & PHYSICS LOOP ---
+    function drawStarPolygon(cx, cy, spikes, outerRadius, innerRadius) {
+      let rot = (Math.PI / 2) * 3;
+      let x = cx;
+      let y = cy;
+      const step = Math.PI / spikes;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - outerRadius);
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+      }
+      ctx.lineTo(cx, cy - outerRadius);
+      ctx.closePath();
+    }
+
+    function updatePhysics() {
+      if (!isRoundActive || isRoundOver || isPaused) return;
+
+      starTrail.push({ x: star.x, y: star.y, r: star.radius * 0.5 });
+      if (starTrail.length > 9) {
+        starTrail.shift();
+      }
+
+      const pad = star.radius + 12;
+      star.x += star.vx;
+      star.y += star.vy;
+      if (star.x <= pad) {
+        star.x = pad;
+        star.vx = Math.abs(star.vx);
+      } else if (star.x >= canvas.width - pad) {
+        star.x = canvas.width - pad;
+        star.vx = -Math.abs(star.vx);
+      }
+      if (star.y <= pad) {
+        star.y = pad;
+        star.vy = Math.abs(star.vy);
+      } else if (star.y >= canvas.height - pad) {
+        star.y = canvas.height - pad;
+        star.vy = -Math.abs(star.vy);
+      }
+
+      if (hazard.active) {
+        const hPad = hazard.radius + 12;
+        hazard.x += hazard.vx;
+        hazard.y += hazard.vy;
+        hazard.angle += 0.04;
+        if (hazard.x <= hPad) {
+          hazard.x = hPad;
+          hazard.vx = Math.abs(hazard.vx);
+        } else if (hazard.x >= canvas.width - hPad) {
+          hazard.x = canvas.width - hPad;
+          hazard.vx = -Math.abs(hazard.vx);
+        }
+        if (hazard.y <= hPad) {
+          hazard.y = hPad;
+          hazard.vy = Math.abs(hazard.vy);
+        } else if (hazard.y >= canvas.height - hPad) {
+          hazard.y = canvas.height - hPad;
+          hazard.vy = -Math.abs(hazard.vy);
+        }
+      }
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < bgStars.length; i++) {
+        const b = bgStars[i];
+        ctx.fillStyle = 'rgba(226, 232, 240, ' + b.alpha + ')';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let i = 0; i < starTrail.length; i++) {
+        const t = starTrail[i];
+        const ratio = (i + 1) / starTrail.length;
+        const trailColor =
+          star.kind === 'bonus'
+            ? '56, 189, 248'
+            : star.kind === 'chrono'
+            ? '52, 211, 153'
+            : streak >= 9
+            ? '244, 114, 182'
+            : '251, 191, 36';
+        ctx.fillStyle = 'rgba(' + trailColor + ', ' + ratio * 0.24 + ')';
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.r * ratio, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        if (!isPaused) {
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.alpha -= 0.03;
+        }
+        if (pt.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.fillStyle = 'rgba(' + pt.color + ', ' + pt.alpha + ')';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (hazard.active) {
+        const hGrad = ctx.createRadialGradient(
+          hazard.x, hazard.y, hazard.radius * 0.2,
+          hazard.x, hazard.y, hazard.radius * 1.9
+        );
+        hGrad.addColorStop(0, 'rgba(244, 63, 94, 0.55)');
+        hGrad.addColorStop(1, 'rgba(244, 63, 94, 0)');
+        ctx.fillStyle = hGrad;
+        ctx.beginPath();
+        ctx.arc(hazard.x, hazard.y, hazard.radius * 1.9, 0, Math.PI * 2);
+        ctx.fill();
+
+        drawStarPolygon(hazard.x, hazard.y, 8, hazard.radius, hazard.radius * 0.58);
+        ctx.fillStyle = '#f43f5e';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#fecdd3';
+        ctx.stroke();
+      }
+
+      if (upgrades.magnet > 0) {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.24)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius * getMagnetBonusMultiplier(), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      star.hitScale += (1 - star.hitScale) * 0.18;
+      pulseAngle += star.kind === 'gold' ? 0.06 : 0.1;
+      const pulse = 1 + Math.sin(pulseAngle) * 0.09;
+      const currentRadius = star.radius * pulse * star.hitScale;
+
+      const grad = ctx.createRadialGradient(
+        star.x, star.y, currentRadius * 0.2,
+        star.x, star.y, currentRadius * 2.0
+      );
+      if (star.kind === 'bonus') {
+        grad.addColorStop(0, 'rgba(56, 189, 248, 0.65)');
+        grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      } else if (star.kind === 'chrono') {
+        grad.addColorStop(0, 'rgba(52, 211, 153, 0.65)');
+        grad.addColorStop(1, 'rgba(52, 211, 153, 0)');
+      } else {
+        grad.addColorStop(0, 'rgba(251, 191, 36, 0.55)');
+        grad.addColorStop(1, 'rgba(251, 191, 36, 0)');
+      }
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, currentRadius * 2.0, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawStarPolygon(star.x, star.y, 5, currentRadius, currentRadius * 0.48);
+      if (star.kind === 'bonus') {
+        ctx.fillStyle = '#38bdf8';
+        ctx.strokeStyle = '#bae6fd';
+      } else if (star.kind === 'chrono') {
+        ctx.fillStyle = '#34d399';
+        ctx.strokeStyle = '#a7f3d0';
+      } else {
+        ctx.fillStyle = '#fbbf24';
+        ctx.strokeStyle = '#fef08a';
+      }
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      for (let i = popups.length - 1; i >= 0; i--) {
+        const p = popups[i];
+        if (!isPaused) {
+          p.y -= 1.3;
+          p.alpha -= 0.028;
+        }
+        if (p.alpha <= 0) {
+          popups.splice(i, 1);
+          continue;
+        }
+        ctx.font = 'bold 15px Inter, sans-serif';
+        ctx.fillStyle = 'rgba(' + p.color + ', ' + p.alpha + ')';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.label, p.x, p.y);
+      }
+    }
+
+    function gameLoop() {
+      updatePhysics();
+      drawScene();
+      animFrameId = window.requestAnimationFrame(gameLoop);
+    }
+
+    // --- 9. GAMEPLAY ACTIONS & EVENT LISTENERS ---
+    function catchStar(hitX, hitY) {
+      if (isRoundOver || isPaused) return;
+      startTimerIfNeeded();
+
+      starsCaught += 1;
+      if (starsCaught % 5 === 0) {
+        shieldReady = true;
+      }
+      streak += 1;
+      if (streak > maxStreak) {
+        maxStreak = streak;
+      }
+      updateStreakUI();
+      updateShieldUI();
+
+      const mult = getComboMultiplier();
+      let basePoints = 1;
+      let burstColor = '251, 191, 36';
+      let popupColor = '253, 224, 71';
+      let soundKind = 'catch';
+
+      if (star.kind === 'bonus') {
+        basePoints = 3;
+        burstColor = '56, 189, 248';
+        popupColor = '125, 211, 252';
+        soundKind = 'bonus';
+      } else if (star.kind === 'chrono') {
+        basePoints = 2;
+        timeLeft += 2;
+        updateTimerStyle();
+        burstColor = '52, 211, 153';
+        popupColor = '110, 231, 183';
+        soundKind = 'chrono';
+      }
+
+      const pointsEarned = basePoints * mult;
+      score += pointsEarned;
+      coins += pointsEarned;
+      scoreDisplay.textContent = String(score);
+      if (score > highScore) {
+        highScore = score;
+        highScoreDisplay.textContent = String(highScore);
+      }
+      saveProgress();
+      updateShopUI();
+      checkMedals();
+
+      let labelText = '+' + pointsEarned + ' ★';
+      if (star.kind === 'chrono') {
+        labelText = '+' + pointsEarned + ' ★ (+2s!)';
+      } else if (mult === 4) {
+        labelText = '+' + pointsEarned + ' ★ FEVER 4x!';
+      } else if (mult > 1) {
+        labelText = '+' + pointsEarned + ' ★ (' + mult + 'x!)';
+      }
+
+      spawnBurstParticles(hitX, hitY, burstColor, star.kind === 'gold' ? 14 : 22);
+      popups.push({
+        x: hitX,
+        y: hitY - 12,
+        alpha: 1,
+        label: labelText,
+        color: popupColor
+      });
+
+      playSound(soundKind);
+      feedbackText.textContent =
+        mult === 4
+          ? '🔥 FEVER OVERDRIVE (4x)! Every catch is supercharged!'
+          : star.kind === 'chrono'
+          ? '⏱️ Emerald Chrono Star! +2s bonus time!'
+          : star.kind === 'bonus'
+          ? '⚡ Blue Bonus Star! +' + pointsEarned + ' pts!'
+          : 'Streak ' + streak + ' (' + mult + 'x)! Keep chaining hits!';
+
+      moveStarToRandomSpot();
+    }
+
+    function hitHazard(hx, hy) {
+      if (shieldReady) {
+        shieldReady = false;
+        updateShieldUI();
+        score += 2;
+        coins += 2;
+        scoreDisplay.textContent = String(score);
+        saveProgress();
+        updateShopUI();
+        spawnBurstParticles(hx, hy, '52, 211, 153', 18);
+        popups.push({
+          x: hx,
+          y: hy - 12,
+          alpha: 1,
+          label: '🛡️ SHIELD BLOCKED (+2 ★)',
+          color: '110, 231, 183'
+        });
+        playSound('shield');
+        feedbackText.textContent = '🛡️ Meteor deflected by your Shield! Combo saved & +2 pts!';
+        placeHazardAwayFromStar();
+        return;
+      }
+
+      streak = 0;
+      updateStreakUI();
+      score = Math.max(0, score - 2);
+      scoreDisplay.textContent = String(score);
+      triggerScreenShake();
+      spawnBurstParticles(hx, hy, '244, 63, 94', 16);
+      popups.push({
+        x: hx,
+        y: hy - 12,
+        alpha: 1,
+        label: '-2 ★ METEOR!',
+        color: '253, 164, 175'
+      });
+      playSound('hazard');
+      feedbackText.textContent = '💥 Hit a Red Meteor (-2 pts & combo reset). Catch 5 stars to recharge Shield!';
+      placeHazardAwayFromStar();
+    }
+
+    function handleCanvasPointer(clientX, clientY) {
+      if (isRoundOver || isPaused) return;
+      totalClicks += 1;
+
+      const rect = canvas.getBoundingClientRect();
+      const clickX = clientX - rect.left;
+      const clickY = clientY - rect.top;
+
+      const distStar = Math.hypot(clickX - star.x, clickY - star.y);
+      if (distStar <= star.radius * getMagnetBonusMultiplier()) {
+        catchStar(star.x, star.y);
+        return;
+      }
+
+      if (hazard.active) {
+        const distHazard = Math.hypot(clickX - hazard.x, clickY - hazard.y);
+        if (distHazard <= hazard.radius * 1.35) {
+          hitHazard(hazard.x, hazard.y);
+          return;
+        }
+      }
+
+      streak = 0;
+      updateStreakUI();
+      playSound('miss');
+      feedbackText.textContent = 'Missed! Combo reset to 1x—upgrade Magnet in Armory for a wider catch ring.';
+    }
+
+    function selectMode(modeKey) {
+      currentModeKey = modeKey;
+      const buttons = [
+        { key: 'chill', el: modeChillBtn },
+        { key: 'arcade', el: modeArcadeBtn },
+        { key: 'hyper', el: modeHyperBtn }
+      ];
+      for (let i = 0; i < buttons.length; i++) {
+        const item = buttons[i];
+        if (item.key === modeKey) {
+          item.el.className = 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold border border-indigo-500 transition';
+        } else {
+          item.el.className = 'px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold border border-slate-700 transition';
+        }
+      }
+      startNewRound();
+    }
+
+    // --- 10. PLATFORM TABS & MINI-APPS LOGIC ---
+    function switchPlatformView(viewName) {
+      gameCard.classList.toggle('hidden', viewName !== 'game');
+      storeHubSection.classList.toggle('hidden', viewName !== 'store');
+      apkGuideSection.classList.toggle('hidden', viewName !== 'guide');
+
+      tabPlayGameBtn.className =
+        viewName === 'game'
+          ? 'px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs transition'
+          : 'px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition';
+      tabStoreHubBtn.className =
+        viewName === 'store'
+          ? 'px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs transition'
+          : 'px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition';
+      tabApkGuideBtn.className =
+        viewName === 'guide'
+          ? 'px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs transition'
+          : 'px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition';
+
+      if (viewName === 'game') {
+        resizeCanvas();
+      } else if (isRoundActive && !isPaused) {
+        togglePause();
+      }
+    }
+
+    tabPlayGameBtn.addEventListener('click', function () {
+      switchPlatformView('game');
+    });
+    tabStoreHubBtn.addEventListener('click', function () {
+      switchPlatformView('store');
+    });
+    tabApkGuideBtn.addEventListener('click', function () {
+      switchPlatformView('guide');
+    });
+    launchStarCatcherBtn.addEventListener('click', function () {
+      switchPlatformView('game');
+    });
+    guideBackToGameBtn.addEventListener('click', function () {
+      switchPlatformView('game');
+    });
+
+    downloadOfflineBtn.addEventListener('click', downloadFullOfflinePlatform);
+    storeDownloadStarBtn.addEventListener('click', downloadFullOfflinePlatform);
+    downloadHabitAppBtn.addEventListener('click', function () {
+      triggerHtmlDownload(
+        'QuickStreak-Habit-Tracker-Offline.html',
+        buildStandaloneHabitAppHtml(),
+        '✅ Downloaded QuickStreak-Habit-Tracker-Offline.html!'
+      );
+    });
+    downloadMemoryGameBtn.addEventListener('click', downloadFullOfflinePlatform);
+
+    installPwaBtn.addEventListener('click', function () {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+      } else {
+        switchPlatformView('guide');
+        installToastText.textContent = '📲 See Step 2 & 3 below to install APK or Add to Home Screen!';
+      }
+    });
+
+    // Habit Tracker Mini-App
+    const habitState = [false, false, false];
+    const habitLabels = [
+      'Drink 8 Glasses of Water',
+      '20 Mins Coding Practice',
+      '15 Mins Walk / Exercise'
+    ];
+    const habitBtns = [habitBtn1, habitBtn2, habitBtn3];
+
+    function renderHabits() {
+      let doneCount = 0;
+      for (let i = 0; i < 3; i++) {
+        if (habitState[i]) doneCount += 1;
+        habitBtns[i].textContent = (habitState[i] ? '✅ ' : '⬜ ') + habitLabels[i];
+        habitBtns[i].className = habitState[i]
+          ? 'p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-left text-xs font-bold text-emerald-300 transition'
+          : 'p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-left text-xs font-semibold text-slate-200 hover:border-emerald-400 transition';
+      }
+      habitProgressText.textContent = doneCount + '/3 Completed';
+    }
+
+    toggleHabitMiniAppBtn.addEventListener('click', function () {
+      habitMiniAppBox.classList.toggle('hidden');
+    });
+    habitBtn1.addEventListener('click', function () {
+      habitState[0] = !habitState[0];
+      playSound('catch');
+      renderHabits();
+    });
+    habitBtn2.addEventListener('click', function () {
+      habitState[1] = !habitState[1];
+      playSound('catch');
+      renderHabits();
+    });
+    habitBtn3.addEventListener('click', function () {
+      habitState[2] = !habitState[2];
+      playSound('catch');
+      renderHabits();
+    });
+
+    // Memory Flip Mini-Game
+    const memoryIcons = ['🚀', '🚀', '🪐', '🪐', '☄️', '☄️', '🌙', '🌙'];
+    let memoryDeck = [];
+    let flippedIndices = [];
+    let matchedCount = 0;
+
+    function initMemoryGame() {
+      memoryDeck = memoryIcons.slice().sort(function () {
+        return Math.random() - 0.5;
+      });
+      flippedIndices = [];
+      matchedCount = 0;
+      memoryStatusText.textContent = 'Tap two cards to find matching cosmic pairs!';
+      renderMemoryGrid();
+    }
+
+    function renderMemoryGrid() {
+      memoryGrid.innerHTML = '';
+      for (let i = 0; i < memoryDeck.length; i++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isFlipped = flippedIndices.indexOf(i) !== -1 || memoryDeck[i] === null;
+        btn.textContent = isFlipped ? (memoryDeck[i] || '✨') : '❓';
+        btn.className =
+          'h-12 rounded-xl font-bold text-lg border transition ' +
+          (memoryDeck[i] === null
+            ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+            : isFlipped
+            ? 'bg-indigo-900 border-indigo-400 text-white'
+            : 'bg-slate-900 border-slate-700 hover:border-fuchsia-400 text-slate-300');
+        btn.addEventListener('click', (function (idx) {
+          return function () {
+            if (memoryDeck[idx] === null || flippedIndices.indexOf(idx) !== -1 || flippedIndices.length >= 2) return;
+            flippedIndices.push(idx);
+            playSound('catch');
+            renderMemoryGrid();
+            if (flippedIndices.length === 2) {
+              const a = flippedIndices[0];
+              const b = flippedIndices[1];
+              if (memoryDeck[a] === memoryDeck[b]) {
+                setTimeout(function () {
+                  memoryDeck[a] = null;
+                  memoryDeck[b] = null;
+                  flippedIndices = [];
+                  matchedCount += 2;
+                  playSound('bonus');
+                  if (matchedCount === memoryDeck.length) {
+                    memoryStatusText.textContent = '🎉 All Cosmic Pairs Matched!';
+                  }
+                  renderMemoryGrid();
+                }, 320);
+              } else {
+                setTimeout(function () {
+                  flippedIndices = [];
+                  playSound('miss');
+                  renderMemoryGrid();
+                }, 550);
+              }
+            }
+          };
+        })(i));
+        memoryGrid.appendChild(btn);
+      }
+    }
+
+    toggleMemoryMiniGameBtn.addEventListener('click', function () {
+      const hidden = memoryMiniGameBox.classList.toggle('hidden');
+      if (!hidden && memoryDeck.length === 0) {
+        initMemoryGame();
+      }
+    });
+    resetMemoryBtn.addEventListener('click', initMemoryGame);
+
+    // --- 11. MAIN GAME LISTENERS ---
+    canvas.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      handleCanvasPointer(e.clientX, e.clientY);
+    });
+
+    quickCatchBtn.addEventListener('click', function () {
+      if (isRoundOver || isPaused) return;
+      totalClicks += 1;
+      catchStar(star.x, star.y);
+    });
+
+    moveStarBtn.addEventListener('click', function () {
+      if (isRoundOver || isPaused) return;
+      playSound('miss');
+      moveStarToRandomSpot();
+      feedbackText.textContent = 'Star moved to a fresh spot!';
+    });
+
+    pauseBtn.addEventListener('click', togglePause);
+    resumeBtn.addEventListener('click', togglePause);
+
+    playAgainBtn.addEventListener('click', function () {
+      playSound('catch');
+      startNewRound();
+    });
+
+    muteBtn.addEventListener('click', function () {
+      isMuted = !isMuted;
+      muteBtn.setAttribute('aria-pressed', String(isMuted));
+      muteBtn.textContent = isMuted ? '🔇 Sound: Off' : '🔊 Sound: On';
+    });
+
+    resetBtn.addEventListener('click', function () {
+      playSound('reset');
+      startNewRound();
+    });
+
+    toggleShopBtn.addEventListener('click', function () {
+      const isHidden = shopPanel.classList.toggle('hidden');
+      toggleShopBtn.setAttribute('aria-expanded', String(!isHidden));
+      updateShopUI();
+    });
+
+    buyMagnetBtn.addEventListener('click', function () {
+      const cost = (upgrades.magnet + 1) * 15;
+      if (upgrades.magnet < 3 && coins >= cost) {
+        coins -= cost;
+        upgrades.magnet += 1;
+        saveProgress();
+        updateShopUI();
+        playSound('upgrade');
+        feedbackText.textContent = '🧲 Magnet Field upgraded to Lv ' + upgrades.magnet + '!';
+      }
+    });
+
+    buyTimeBtn.addEventListener('click', function () {
+      const cost = (upgrades.time + 1) * 20;
+      if (upgrades.time < 3 && coins >= cost) {
+        coins -= cost;
+        upgrades.time += 1;
+        if (!isRoundActive && !isRoundOver) {
+          timeLeft = getRoundStartingTime();
+          updateTimerStyle();
+        }
+        saveProgress();
+        updateShopUI();
+        playSound('upgrade');
+        feedbackText.textContent = '🔋 Time Battery upgraded to Lv ' + upgrades.time + ' (+2s round time)!';
+      }
+    });
+
+    buyLuckBtn.addEventListener('click', function () {
+      const cost = (upgrades.luck + 1) * 25;
+      if (upgrades.luck < 3 && coins >= cost) {
+        coins -= cost;
+        upgrades.luck += 1;
+        saveProgress();
+        updateShopUI();
+        playSound('upgrade');
+        feedbackText.textContent = '🍀 Lucky Star upgraded to Lv ' + upgrades.luck + '!';
+      }
+    });
+
+    modeChillBtn.addEventListener('click', function () {
+      selectMode('chill');
+    });
+
+    modeArcadeBtn.addEventListener('click', function () {
+      selectMode('arcade');
+    });
+
+    modeHyperBtn.addEventListener('click', function () {
+      selectMode('hyper');
+    });
+
+    window.addEventListener('keydown', function (e) {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (isRoundOver) {
+          startNewRound();
+        } else if (!isPaused) {
+          totalClicks += 1;
+          catchStar(star.x, star.y);
+        }
+      } else if (e.code === 'KeyP') {
+        togglePause();
+      }
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+
+    window.onload = function () {
+      resizeCanvas();
+      startNewRound();
+      initMemoryGame();
+      if (animFrameId) {
+        window.cancelAnimationFrame(animFrameId);
+      }
+      animFrameId = window.requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
