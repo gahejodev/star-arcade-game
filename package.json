@@ -1,0 +1,13 @@
+{
+  "name": "starhub-arcade-platform",
+  "version": "1.0.0",
+  "description": "StarHub Online & Offline Games and Apps Platform with Android APK Builder",
+  "scripts": {
+    "build": "mkdir -p www && cp index.html manifest.json sw.js www/"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  }
+}
